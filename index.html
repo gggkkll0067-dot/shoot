@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>스마트 10대 라면 조리 타이머</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+        /* 크롬 등 브라우저 타이머 숫자 폭 고정 */
+        .tabular-nums {
+            font-variant-numeric: tabular-nums;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between text-slate-800">
+
+    <!-- 헤더 -->
+    <header class="bg-white shadow-md border-b-4 border-red-500 py-6 px-4">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <h1 id="ui-title" class="text-2xl md:text-3xl font-extrabold text-red-600 flex items-center gap-2">
+                🍜 초정밀 스마트 라면 멀티 타이머
+            </h1>
+            <div class="flex items-center gap-3">
+                <span id="ui-lang-label" class="text-sm font-semibold text-slate-600">🌐 언어 (Language):</span>
+                <select id="langSelect" onchange="changeLanguage()" class="bg-slate-100 border border-slate-300 rounded-md px-3 py-1.5 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-red-500">
+                    <option value="ko">한국어</option>
+                    <option value="en">English</option>
+                    <option value="zh">中文 (Chinese)</option>
+                    <option value="es">Español (Spanish)</option>
+                    <option value="de">Deutsch (German)</option>
+                    <option value="ja">日本語 (Japanese)</option>
+                    <option value="vi">Tiếng Việt (Vietnamese)</option>
+                </select>
+            </div>
+        </div>
+    </header>
+
+    <!-- 메인 컨테이너 -->
+    <main class="max-w-6xl w-full mx-auto p-4 md:p-6 flex-grow grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- 왼쪽: 라면 설정 패널 (5 cols) -->
+        <section class="lg:col-span-5 bg-white rounded-2xl shadow-xl p-6 flex flex-col gap-5 border border-slate-100">
+            <h2 id="ui-setting-title" class="text-xl font-bold border-b pb-3 text-slate-700 flex items-center gap-2">
+                ⚙️ 조리 레시피 설정
+            </h2>
+
+            <!-- 1. 라면 종류 선택 -->
+            <div class="flex flex-col gap-1.5">
+                <label id="ui-ramen-label" class="font-bold text-slate-700 text-sm">🍜 라면 종류 선택</label>
+                <select id="ramenSelect" onchange="onRamenChange()" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 font-medium text-base focus:ring-2 focus:ring-red-500 focus:outline-none">
+                    <option value="shin">신라면 (Shin Ramyun)</option>
+                    <option value="neoguri">너구리 (Neoguri)</option>
+                    <option value="chapagetti">짜파게티 (Chapagetti)</option>
+                    <option value="jjawang">짜왕 (Jjawang)</option>
+                    <option value="anseong">안성탕면 (Anseongtangmyun)</option>
+                    <option value="buldak">불닭볶음면 (Buldak Bokkeummyeon)</option>
+                    <option value="samyang">삼양라면 (Samyang Ramen)</option>
+                    <option value="jin">진라면 (Jin Ramen)</option>
+                    <option value="bibim">비빔면 (Bibim Men)</option>
+                    <option value="wang">왕뚜껑 (Wang Ttukdeong - 봉지형)</option>
+                </select>
+            </div>
+
+            <!-- 라면 정보 카드 (물 양 / 기본시간 안내) -->
+            <div id="ramenInfoCard" class="bg-red-50 border border-red-200 rounded-xl p-4 flex flex-col gap-1 text-sm text-red-900">
+                <div>💧 <strong id="ui-card-water-label">권장 물 양:</strong> <span id="infoWater" class="font-bold">550 ml</span></div>
+                <div>⏱️ <strong id="ui-card-time-label">총 조리 시간:</strong> <span id="infoTime" class="font-bold">4분 30초</span></div>
+                <div class="mt-2 text-xs text-red-700 border-t border-red-200 pt-2" id="infoTip">
+                    * 최적 조리법: 1) 물 550ml 끓이기 -> 2) 면, 분말, 건더기 넣고 3분 30초 끓인 뒤 계란/치즈 넣고 1분 더 끓이기.
+                </div>
+            </div>
+
+            <!-- 2. 열기구 선택 -->
+            <div class="flex flex-col gap-1.5">
+                <label id="ui-stove-label" class="font-bold text-slate-700 text-sm">🔥 열기구 선택 (물 끓는 시간 차이 반영)</label>
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="flex items-center justify-center gap-2 border p-3 rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100 border-slate-300 transition" id="stoveGasLabel">
+                        <input type="radio" name="stoveType" value="gas" checked class="accent-red-500">
+                        <span id="ui-stove-gas">가스레인지 (4분)</span>
+                    </label>
+                    <label class="flex items-center justify-center gap-2 border p-3 rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100 border-slate-300 transition" id="stoveInductionLabel">
+                        <input type="radio" name="stoveType" value="induction" class="accent-red-500">
+                        <span id="ui-stove-induction">인덕션 (3분)</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 3. 토핑 선택 -->
+            <div class="flex flex-col gap-1.5">
+                <label id="ui-topping-label" class="font-bold text-slate-700 text-sm">🥬 추가 토핑 (조리 완료 1분 전 알림)</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <label class="flex items-center gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200 cursor-pointer">
+                        <input type="checkbox" id="top-rice" class="w-4 h-4 accent-red-500">
+                        <span id="ui-top-rice" class="text-sm">떡국떡</span>
+                    </label>
+                    <label class="flex items-center gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200 cursor-pointer">
+                        <input type="checkbox" id="top-green" class="w-4 h-4 accent-red-500">
+                        <span id="ui-top-green" class="text-sm">송송 썬 파</span>
+                    </label>
+                    <label class="flex items-center gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200 cursor-pointer">
+                        <input type="checkbox" id="top-cheese" class="w-4 h-4 accent-red-500">
+                        <span id="ui-top-cheese" class="text-sm">치즈</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 4. 계란 선택 -->
+            <div class="flex flex-col gap-1.5">
+                <label id="ui-egg-label" class="font-bold text-slate-700 text-sm">🥚 계란 굽기 옵션</label>
+                <select id="eggType" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 font-medium text-base focus:ring-2 focus:ring-red-500 focus:outline-none">
+                    <option value="none">계란 없음</option>
+                    <option value="soft">반숙 계란 (완료 1분 30초 전 투입)</option>
+                    <option value="hard">완숙 계란 (면 끓일 때 바로 투입)</option>
+                </select>
+            </div>
+        </section>
+
+        <!-- 오른쪽: 실시간 타이머 및 컨트롤 패널 (7 cols) -->
+        <section class="lg:col-span-7 bg-white rounded-2xl shadow-xl p-6 flex flex-col justify-between border border-slate-100 min-h-[500px]">
+            
+            <!-- 조리 단계 정보 -->
+            <div>
+                <div class="flex justify-between items-center border-b pb-3 mb-4">
+                    <h2 id="ui-status-title" class="text-xl font-bold text-slate-700 flex items-center gap-2">
+                        📊 실시간 조리 진척도
+                    </h2>
+                    <span id="currentStepBadge" class="bg-red-500 text-white text-xs px-2.5 py-1 rounded-full font-bold">
+                        STEP 1 / 3
+                    </span>
+                </div>
+
+                <!-- 조리 메시지 박스 -->
+                <div id="statusMessageBox" class="bg-slate-50 border-l-4 border-red-500 p-4 rounded-r-lg text-lg font-medium text-slate-700 mb-6 min-h-[90px] flex items-center">
+                    조리 옵션을 확인하고 하단의 시작 버튼을 누르세요.
+                </div>
+
+                <!-- 시각화 레시피 가이드라인 -->
+                <div id="stepTimeline" class="flex items-center justify-between gap-2 px-2 py-4 bg-slate-50 rounded-xl mb-6">
+                    <div id="timeline-step1" class="flex-1 text-center font-bold text-xs text-red-500">
+                        <div>🚿 1단계</div>
+                        <div id="ui-tl-s1">물 끓이기</div>
+                    </div>
+                    <div class="text-slate-300">➔</div>
+                    <div id="timeline-step2" class="flex-1 text-center font-semibold text-xs text-slate-400">
+                        <div>🍜 2단계</div>
+                        <div id="ui-tl-s2">면/스프 넣기</div>
+                    </div>
+                    <div class="text-slate-300">➔</div>
+                    <div id="timeline-step3" class="flex-1 text-center font-semibold text-xs text-slate-400">
+                        <div>🍽️ 3단계</div>
+                        <div id="ui-tl-s3">최종 조리/서빙</div>
+                    </div>
+                </div>
+
+                <!-- 대형 타이머 디스플레이 -->
+                <div class="flex flex-col items-center justify-center py-4 bg-slate-900 text-white rounded-2xl shadow-inner relative overflow-hidden">
+                    <div class="absolute top-2 left-4 text-xs font-bold text-red-400 tracking-wider uppercase" id="ui-timer-header">Time Remaining</div>
+                    <div id="timerDisplay" class="text-7xl md:text-8xl font-black tracking-widest tabular-nums text-red-500 py-3">
+                        00:00
+                    </div>
+                </div>
+            </div>
+
+            <!-- 컨트롤 버튼 군 -->
+            <div class="flex flex-col gap-3 mt-6">
+                <!-- 다음 단계 버튼 (진행 상태와 관계없이 항상 표시됨) -->
+                <button id="nextBtn" onclick="manuallyNextStep()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-6 rounded-xl shadow-md transition duration-200 transform active:scale-95 flex items-center justify-center gap-2 text-lg">
+                    <span>➡️</span> <span id="ui-next-text">다음 조리 단계로 바로 넘어가기</span>
+                </button>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <!-- 시작 / 일시정지 버튼 -->
+                    <button id="startBtn" onclick="toggleTimer()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3.5 px-6 rounded-xl shadow-md transition duration-200 transform active:scale-95 flex items-center justify-center gap-2 text-lg">
+                        <span id="startBtnIcon">▶️</span> <span id="ui-start-text">현재 단계 시작</span>
+                    </button>
+
+                    <!-- 초기화 버튼 -->
+                    <button id="resetBtn" onclick="resetAll()" class="bg-slate-500 hover:bg-slate-600 text-white font-bold py-3.5 px-6 rounded-xl shadow-md transition duration-200 transform active:scale-95 flex items-center justify-center gap-2 text-lg">
+                        <span>🔄</span> <span id="ui-reset-text">처음부터 다시</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 푸터 및 개발자 정보 -->
+    <footer class="bg-slate-800 text-slate-400 text-center py-6 px-4 border-t border-slate-700">
+        <p class="text-sm">
+            Developed by: <span class="text-white font-bold">가치있는미래교육연구소 대표 김병찬</span>
+        </p>
+        <p class="text-xs text-slate-500 mt-1">
+            (CEO Byung-chan Kim, Valuable Future Education Research Institute) &copy; 2026. All Rights Reserved.
+        </p>
+    </footer>
+
+    <script>
+        // 10종 라면 상세 스펙 정의
+        const ramenDatabase = {
+            shin: {
+                name_ko: "신라면 (Shin Ramyun)",
+                name_en: "Shin Ramyun",
+                name_zh: "辛拉面",
+                name_es: "Shin Ramyun",
+                name_de: "Shin Ramyun",
+                name_ja: "辛ラーメン",
+                name_vi: "Mì Shin Ramyun",
+                water: 550,
+                cookTime: 270, // 4분 30초
+                type: 'broth',
+                tip_ko: "물 550ml 끓이기 ➔ 면/스프/건더기 넣고 3분 30초 끓이기 ➔ 마지막 1분에 대파/계란(또는 치즈) 얹어 마무리. (진하게 드시려면 물 500ml 권장)",
+                tip_en: "Boil 550ml water ➔ Add noodles & soup, cook for 3m 30s ➔ Add green onion/egg/cheese for the last 1m.",
+                tip_zh: "煮沸550ml水 ➔ 放入面饼和调料包煮3分30秒 ➔ 最后一分钟加入大葱、鸡蛋或芝士完成。",
+                tip_es: "Hervir 550ml de agua ➔ Agregar fideos y sopa, cocinar por 3m 30s ➔ Agregar cebollín/huevo/queso durante el último minuto.",
+                tip_de: "550ml Wasser kochen ➔ Nudeln & Suppe hinzufügen, 3 Min. 30 Sek. kochen ➔ Letzte Minute Frühlingszwiebeln/Ei/Käse hinzugeben.",
+                tip_ja: "お湯550mlを沸かす ➔ 麺とスープを入れて3分30秒茹でる ➔ 最後の1分にネギや卵、チーズをのせて仕上げる。",
+                tip_vi: "Đun sôi 550ml nước ➔ Thêm mì và gói gia vị, nấu trong 3p 30s ➔ Thêm hành lá/trứng/phô mai vào phút cuối cùng."
+            },
+            neoguri: {
+                name_ko: "너구리 (Neoguri)",
+                name_en: "Neoguri",
+                name_zh: "农心 乌龙面",
+                name_es: "Neoguri",
+                name_de: "Neoguri",
+                name_ja: "ノグリラーメン",
+                name_vi: "Mì Neoguri",
+                water: 550,
+                cookTime: 300, // 5분
+                type: 'broth',
+                tip_ko: "물 550ml에 다시마를 같이 넣고 끓이기 ➔ 면과 스프를 넣고 5분 끓이기 ➔ 어묵/파를 더하면 해물풍미 극대화.",
+                tip_en: "Boil 550ml water with kelp ➔ Add noodles & soup, cook for 5m ➔ Add green onion & fish cakes to boost flavor.",
+                tip_zh: "将昆布放入550ml水中一同煮沸 ➔ 放入面条和调料包煮5分钟 ➔ 加上鱼饼和大葱使海鲜风味更佳。",
+                tip_es: "Hervir 550ml de agua con alga kelp ➔ Agregar fideos y sopa, cocinar por 5m ➔ Añadir cebollín y pastel de pescado.",
+                tip_de: "550ml Wasser mit Kombu kochen ➔ Nudeln & Suppe hinzufügen, 5 Min. kochen ➔ Frühlingszwiebeln & Fischfrikadellen hinzufügen.",
+                tip_ja: "お湯550mlに昆布を入れて沸かす ➔ 麺とスープを入れて5分茹でる ➔ おでんやネギを加えると海鮮の風味が倍増。",
+                tip_vi: "Đun sôi 550ml nước cùng rong biển ➔ Thêm mì và gia vị, nấu trong 5p ➔ Thêm hành lá và chả cá để tăng hương vị."
+            },
+            chapagetti: {
+                name_ko: "짜파게티 (Chapagetti)",
+                name_en: "Chapagetti",
+                name_zh: "炸酱面",
+                name_es: "Chapagetti",
+                name_de: "Chapagetti",
+                name_ja: "チャパゲティ",
+                name_vi: "Mì Chapagetti",
+                water: 600,
+                cookTime: 300, // 5분 (이후 국물 버림)
+                type: 'drain',
+                tip_ko: "물 600ml 끓이기 ➔ 면과 후레이크 넣고 5분간 충분히 익히기 ➔ 물을 8스푼 정도 남기고 버린 뒤 짜장스프와 올리브유 비비기.",
+                tip_en: "Boil 600ml water ➔ Cook noodles and flakes for 5m ➔ Drain water (leave about 8 spoons), mix with black bean powder & olive oil.",
+                tip_zh: "煮沸600ml水 ➔ 放入面和蔬菜包煮5分钟 ➔ 留约8汤匙水，其余倒掉，加入炸酱粉和橄榄油拌匀。",
+                tip_es: "Hervir 600ml de agua ➔ Cocinar los fideos por 5m ➔ Escurrir el agua (dejar 8 cucharadas), mezclar con salsa de soya negra y aceite.",
+                tip_de: "600ml Wasser kochen ➔ Nudeln & Flocken 5 Min. gießen ➔ Wasser abgießen (ca. 8 Löffel übrig lassen), mit Schwarzbohnenpulver & Öl mischen.",
+                tip_ja: "お湯600mlを沸かす ➔ 麺とかやくを入れて5分間茹でる ➔ お湯を大さじ8杯ほど残して捨て、粉末スープと調味油を混ぜる。",
+                tip_vi: "Đun sôi 600ml nước ➔ Nấu mì và rau sấy trong 5p ➔ Chắt nước (chừa lại khoảng 8 muỗng), trộn đều với gói bột sốt đen và dầu."
+            },
+            jjawang: {
+                name_ko: "짜왕 (Jjawang)",
+                name_en: "Jjawang",
+                name_zh: "炸王 炸酱面",
+                name_es: "Jjawang",
+                name_de: "Jjawang",
+                name_ja: "チャワン",
+                name_vi: "Mì Jjawang",
+                water: 600,
+                cookTime: 300,
+                type: 'drain',
+                tip_ko: "물 600ml 끓이기 ➔ 굵은 면을 5분 익히기 ➔ 물을 일부 남기고 따라낸 뒤 짜장스프와 유성스프 넣고 잘 비비기. 계란후라이 추가 추천.",
+                tip_en: "Boil 600ml water ➔ Cook thick noodles for 5m ➔ Drain water partly, mix with sauce powder and oil. Fried egg is highly recommended.",
+                tip_zh: "煮沸600ml水 ➔ 放入粗面煮5分钟 ➔ 留少许水，其余倒掉，放入调料包和油包拌匀。推荐加煎蛋。",
+                tip_es: "Hervir 600ml de agua ➔ Cocinar fideos gruesos por 5m ➔ Escurrir, mezclar con salsa y aceite. Se recomienda huevo frito.",
+                tip_de: "600ml Wasser kochen ➔ Dicke Nudeln 5 Min. kochen ➔ Wasser teilweise abgießen, Pulver und Öl vermischen. Spiegelei empfohlen.",
+                tip_ja: "お湯600mlを沸かす ➔ 太麺を5分茹でる ➔ お湯を少し残して捨て、スープと調味油を入れてよく混ぜる。目玉焼き追加がおすすめ。",
+                tip_vi: "Đun sôi 600ml nước ➔ Nấu sợi mì to trong 5p ➔ Chắt bớt nước, thêm gói sốt và dầu rồi trộn đều. Nên thêm trứng ốp la."
+            },
+            anseong: {
+                name_ko: "안성탕면 (Anseongtangmyun)",
+                name_en: "Anseongtangmyun",
+                name_zh: "安城汤面",
+                name_es: "Anseongtangmyun",
+                name_de: "Anseongtangmyun",
+                name_ja: "安城湯麺",
+                name_vi: "Mì Anseongtangmyun",
+                water: 550,
+                cookTime: 270, // 4분 30초
+                type: 'broth',
+                tip_ko: "물 550ml 끓이기 ➔ 면과 스프를 한꺼번에 넣고 4분 30초 끓이기 ➔ 기호에 따라 깻잎, 계란, 파 등을 추가해 구수하게 즐기기.",
+                tip_en: "Boil 550ml water ➔ Add noodles and soup together, cook for 4m 30s ➔ Add perilla leaves, egg, or green onion.",
+                tip_zh: "煮沸550ml水 ➔ 同时放入面和调料，煮4分30秒 ➔ 可根据喜好加入苏子叶、鸡蛋、大葱等，口感更香浓。",
+                tip_es: "Hervir 550ml de agua ➔ Agregar fideos y sopa a la vez, cocinar por 4m 30s ➔ Agregar hojas de sésamo, huevo o cebollín.",
+                tip_de: "550ml Wasser kochen ➔ Nudeln & Suppe zusammengeben, 4 Min. 30 Sek. kochen ➔ Nach Belieben Sesamblätter, Ei oder Frühlingszwiebeln hinzufügen.",
+                tip_ja: "お湯550mlを沸かす ➔ 麺とスープを一緒に入れて4分30秒茹でる ➔ 好みでエゴマの葉や卵、ネギを加えるのがおすすめ。",
+                tip_vi: "Đun sôi 550ml nước ➔ Cho mì và gia vị vào cùng lúc, nấu trong 4p 30s ➔ Thêm lá lốt, trứng hoặc hành lá tùy thích."
+            },
+            buldak: {
+                name_ko: "불닭볶음면 (Buldak Bokkeummyeon)",
+                name_en: "Buldak Bokkeummyeon",
+                name_zh: "辣火鸡面",
+                name_es: "Buldak Ramen",
+                name_de: "Buldak Ramen",
+                name_ja: "ブルダック炒め麺",
+                name_vi: "Mì cay Buldak",
+                water: 600,
+                cookTime: 300, // 5분
+                type: 'stir-fry',
+                tip_ko: "물 600ml 끓이기 ➔ 면을 5분간 충분히 삶기 ➔ 물을 8스푼 정도 남겨두고 따라낸 뒤 액상스프를 넣고 약한 불에서 30초간 볶아내기.",
+                tip_en: "Boil 600ml water ➔ Cook noodles for 5m ➔ Drain water (leave about 8 spoons), add liquid sauce and stir-fry for 30s over low heat.",
+                tip_zh: "煮沸600ml水 ➔ 放入面条煮5分钟 ➔ 留约8汤匙水，其余倒掉，加入液体辣酱，小火翻炒30秒。",
+                tip_es: "Hervir 600ml de agua ➔ Cocinar fideos por 5m ➔ Escurrir (dejar 8 cucharadas), añadir salsa líquida y saltear por 30s a fuego bajo.",
+                tip_de: "600ml Wasser kochen ➔ Nudeln 5 Min. kochen ➔ Wasser abgießen (ca. 8 Löffel übrig lassen), flüssige Sauce hinzufügen und 30 Sek. bei schwacher Hitze anbraten.",
+                tip_ja: "お湯600mlを沸かす ➔ 麺を5分間茹でる ➔ お湯を大さじ8杯ほど残して捨て、液体スープを入れて弱火で30秒間炒める。",
+                tip_vi: "Đun sôi 600ml nước ➔ Nấu mì trong 5p ➔ Chắt nước (chừa lại khoảng 8 muỗng), thêm sốt nước và xào trong 30s trên lửa nhỏ."
+            },
+            samyang: {
+                name_ko: "삼양라면 (Samyang Ramen)",
+                name_en: "Samyang Ramen",
+                name_zh: "三养拉面",
+                name_es: "Samyang Ramen",
+                name_de: "Samyang Ramen",
+                name_ja: "三養ラーメン",
+                name_vi: "Mì Samyang",
+                water: 550,
+                cookTime: 240, // 4분
+                type: 'broth',
+                tip_ko: "물 550ml 끓이기 ➔ 면과 스프를 넣고 4분간 조리하기 ➔ 마지막 1분에 파, 햄, 버섯, 계란 등을 넣어 감칠맛 더하기.",
+                tip_en: "Boil 550ml water ➔ Add noodles and soup, cook for 4m ➔ Add green onion, ham, mushroom, or egg during the last minute.",
+                tip_zh: "煮沸550ml水 ➔ 放入面和调料煮4分钟 ➔ 最后一分钟加入大葱、火腿、蘑菇或鸡蛋增加风味。",
+                tip_es: "Hervir 550ml de agua ➔ Agregar fideos y sopa, cocinar por 4m ➔ Añadir cebollín, jamón, champiñones o huevo en el último minuto.",
+                tip_de: "550ml Wasser kochen ➔ Nudeln & Suppe hinzufügen, 4 Min. kochen ➔ Letzte Minute Frühlingszwiebeln, Schinken, Pilze oder Ei hinzufügen.",
+                tip_ja: "お湯550mlを沸かす ➔ 麺とスープを入れて4分茹でる ➔ 最後の1分にネギやハム、マッシュルーム、卵などを加える。",
+                tip_vi: "Đun sôi 550ml nước ➔ Thêm mì và gói gia vị, nấu trong 4p ➔ Thêm hành lá, giăm bông, nấm hoặc trứng vào phút cuối."
+            },
+            jin: {
+                name_ko: "진라면 (Jin Ramen)",
+                name_en: "Jin Ramen",
+                name_zh: "真拉面",
+                name_es: "Jin Ramen",
+                name_de: "Jin Ramen",
+                name_ja: "ジンラーメン",
+                name_vi: "Mì Jin Ramen",
+                water: 550,
+                cookTime: 240, // 4분
+                type: 'broth',
+                tip_ko: "물 550ml에 건더기 스프를 먼저 넣어 끓이기 ➔ 분말스프와 면을 넣고 4분간 끓이기 ➔ 대파, 계란, 만두 토핑 추천.",
+                tip_en: "Add flakes to 550ml water and boil first ➔ Add soup powder and noodles, cook for 4m ➔ Top with green onion, egg, or dumplings.",
+                tip_zh: "先在550ml水中放入蔬菜包煮沸 ➔ 加入调味粉和面条，煮4分钟 ➔ 推荐加入大葱、鸡蛋或饺子。",
+                tip_es: "Añadir verduras secas a 550ml de agua y hervir primero ➔ Añadir sopa en polvo y fideos, cocinar por 4m ➔ Añadir cebollín, huevo o dumplings.",
+                tip_de: "Flocken zuerst in 550ml Wasser kochen ➔ Suppenpulver und Nudeln hinzufügen, 4 Min. kochen ➔ Frühlingszwiebeln, Ei oder Teigtaschen hinzufügen.",
+                tip_ja: "お湯550mlにかやくを先に入れて沸かす ➔ 粉末スープと麺を入れて4分間茹でる ➔ ネギ、卵、餃子のトッピングがおすすめ。",
+                tip_vi: "Cho rau sấy vào 550ml nước và đun sôi trước ➔ Thêm bột súp và mì, nấu trong 4p ➔ Khuyên dùng thêm hành lá, trứng, sủi cảo."
+            },
+            bibim: {
+                name_ko: "팔도 비빔면 (Bibim Men)",
+                name_en: "Paldo Bibim Men",
+                name_zh: "八道 八道拌面",
+                name_es: "Paldo Bibim Men",
+                name_de: "Paldo Bibim Men",
+                name_ja: "パルドビビン麺",
+                name_vi: "Mì trộn Paldo Bibim",
+                water: 600,
+                cookTime: 180, // 3분
+                type: 'cold',
+                tip_ko: "물 600ml에 면을 3분 삶은 뒤 찬물에 헹궈 물기 빼기 ➔ 액상소스와 비비기 ➔ 삶은 계란, 오이 채, 참기름 한 방울 추가 시 맛 급상승.",
+                tip_en: "Boil noodles in 600ml water for 3m ➔ Rinse in cold water & drain well ➔ Mix with liquid sauce. Add boiled egg, cucumber, or sesame oil.",
+                tip_zh: "用600ml水煮面3分钟 ➔ 用凉水冲洗并控干水分 ➔ 拌入调料包。推荐加入熟鸡蛋、黄瓜丝、香油一滴。",
+                tip_es: "Hervir los fideos en 600ml de agua por 3m ➔ Enjuagar con agua fría y escurrir ➔ Mezclar con la salsa. Añadir huevo, pepino o aceite de sésamo.",
+                tip_de: "Nudeln in 600ml Wasser 3 Min. kochen ➔ In kaltem Wasser abspülen und gut abtropfen lassen ➔ Mit Sauce mischen. Gekochtes Ei, Gurke oder Sesamöl hinzufügen.",
+                tip_ja: "お湯600mlで麺を3分茹でた後、冷水で洗って水気を切る ➔ 液体ソースと混ぜる ➔ ゆで卵、きゅうりの千切り、ごま油を少し垂らすと最高。",
+                tip_vi: "Nấu mì trong 600ml nước trong 3p ➔ Rửa sạch bằng nước lạnh và để ráo ➔ Trộn đều với gói sốt nước. Nên thêm trứng luộc, dưa chuột thái sợi hoặc dầu mè."
+            },
+            wang: {
+                name_ko: "왕뚜껑 (Wang Ttukdeong - 봉지형)",
+                name_en: "Wang Ttukdeong (Bag)",
+                name_zh: "王盖子拉面 (袋装)",
+                name_es: "Wang Ttukdeong (Bolsa)",
+                name_de: "Wang Ttukdeong (Beutel)",
+                name_ja: "ワントゥッコン (袋麺)",
+                name_vi: "Mì Wang Ttukdeong (Gói)",
+                water: 550,
+                cookTime: 210, // 3분 30초
+                type: 'broth',
+                tip_ko: "물 550ml 끓이기 ➔ 얇고 쫄깃한 면발과 스프를 넣고 3분 30초만 끓이기 ➔ 김치나 대파를 더해 시원하게 먹기.",
+                tip_en: "Boil 550ml water ➔ Add thin noodles and soup, cook for 3m 30s ➔ Serve with kimchi or green onion.",
+                tip_zh: "煮沸550ml水 ➔ 放入细面和调料包煮3分30秒 ➔ 搭配泡菜或大葱食用，味道更清爽。",
+                tip_es: "Hervir 550ml de agua ➔ Agregar fideos finos y sopa, cocinar por 3m 30s ➔ Servir con kimchi o cebollín.",
+                tip_de: "550ml Wasser kochen ➔ Dünne Nudeln & Suppe hinzufügen, 3 Min. 30 Sek. kochen ➔ Mit Kimchi oder Frühlingszwiebeln servieren.",
+                tip_ja: "お湯550mlを沸かす ➔ 細くてコシのある麺とスープを入れて3分30秒だけ茹でる ➔ キムチやネギを加えてさっぱりと食べる。",
+                tip_vi: "Đun sôi 550ml nước ➔ Thêm sợi mì nhỏ và gói gia vị, nấu trong 3p 30s ➔ Ăn kèm với kim chi hoặc hành lá để tăng độ ngon."
+            }
+        };
+
+        // 다국어 번역 사전
+        const i18n = {
+            ko: {
+                title: "🍜 초정밀 스마트 라면 멀티 타이머",
+                langLabel: "🌐 언어 (Language):",
+                settingTitle: "⚙️ 조리 레시피 설정",
+                ramenLabel: "🍜 라면 종류 선택",
+                cardWater: "권장 물 양:",
+                cardTime: "총 조리 시간:",
+                stoveLabel: "🔥 열기구 선택 (물 끓는 시간 차이 반영)",
+                stoveGas: "가스레인지 (4분)",
+                stoveInduction: "인덕션 (3분)",
+                toppingLabel: "🥬 추가 토핑 (조리 완료 1분 전 알림)",
+                topRice: "떡국떡",
+                topGreen: "송송 썬 파",
+                topCheese: "치즈",
+                eggLabel: "🥚 계란 굽기 옵션",
+                eggNone: "계란 없음",
+                eggSoft: "반숙 계란 (완료 1분 30초 전 투입)",
+                eggHard: "완숙 계란 (면 끓일 때 바로 투입)",
+                statusTitle: "📊 실시간 조리 진척도",
+                badgeStep: "STEP",
+                ready: "조리 옵션을 확인하고 하단의 시작 버튼을 누르세요.",
+                startTextReady: "현재 단계 시작",
+                startTextPause: "일시 정지",
+                nextText: "다음 조리 단계로 바로 넘어가기",
+                resetText: "처음부터 다시",
+                tls1: "물 끓이기",
+                tls2: "면/스프 넣기",
+                tls3: "최종 조리/서빙",
+                
+                // 조리 멘트 & 음성
+                v_start_boil: "물을 끓이기 시작합니다. 물이 다 끓으면 조리 단계를 진행해 주세요.",
+                v_water_boiling: "물이 힘차게 끓고 있습니다! 다음 단계로 넘어가 주세요.",
+                v_add_noodles: "끓는 물에 면과 스프를 넣어주세요. 지금 시작 버튼을 누르면 면 조리 타이머가 작동합니다.",
+                v_add_hard_egg: "참고로, 완숙 계란도 지금 함께 냄비에 넣어주세요.",
+                v_soft_egg_timing: "잠시 후 반숙 계란 투입을 안내해 드립니다.",
+                v_alert_soft_egg: "반숙 계란 타이밍입니다! 지금 계란을 깨트려 넣어주세요.",
+                v_alert_topping: "토핑 타이밍입니다! 준비하신 파, 치즈, 떡국떡 등의 토핑을 냄비에 넣어주세요.",
+                v_finish_broth: "조리가 끝났습니다! 불을 끄고 맛있는 라면을 그릇에 담아 즐거운 식사 되세요.",
+                v_drain_intro: "면이 다 익었습니다! 조심해서 뜨거운 물을 일부 따라내고 소스를 비벼주세요.",
+                v_cold_intro: "면 삶기가 완료되었습니다! 즉시 찬물에 헹궈 물기를 빼고 비빔 양념과 함께 비벼주세요."
+            },
+            en: {
+                title: "🍜 Smart Multi-Language Ramen Cooking Timer",
+                langLabel: "🌐 Language:",
+                settingTitle: "⚙️ Recipe Settings",
+                ramenLabel: "🍜 Select Ramen",
+                cardWater: "Water Amount:",
+                cardTime: "Cooking Time:",
+                stoveLabel: "🔥 Stove Type (Affects Boiling Time)",
+                stoveGas: "Gas Stove (4m)",
+                stoveInduction: "Induction (3m)",
+                toppingLabel: "🥬 Toppings (Alert 1m Before Finish)",
+                topRice: "Rice Cake",
+                topGreen: "Green Onion",
+                topCheese: "Cheese",
+                eggLabel: "🥚 Egg Option",
+                eggNone: "No Egg",
+                eggSoft: "Soft Boiled (Put in 1m 30s before)",
+                eggHard: "Hard Boiled (Put in with noodles)",
+                statusTitle: "📊 Real-time Progress",
+                badgeStep: "STEP",
+                ready: "Configure your recipe options and click Start to begin.",
+                startTextReady: "Start Current Step",
+                startTextPause: "Pause",
+                nextText: "Skip to Next Step",
+                resetText: "Reset All",
+                tls1: "Boil Water",
+                tls2: "Add Ingredients",
+                tls3: "Final Cooking / Serve",
+                
+                v_start_boil: "Starting to boil water. Please proceed to the next step once the water boils.",
+                v_water_boiling: "The water is boiling vigorously! Please skip to the next step.",
+                v_add_noodles: "Add the noodles and seasoning packets. Press start to run the cooking timer.",
+                v_add_hard_egg: "Note, please put the hard-boiled egg in now as well.",
+                v_soft_egg_timing: "I will guide you when to put the soft-boiled egg in shortly.",
+                v_alert_soft_egg: "Time for the soft-boiled egg! Crack the egg into the pot now.",
+                v_alert_topping: "Topping time! Please add your green onion, cheese, or rice cakes to the pot.",
+                v_finish_broth: "Cooking is complete! Turn off the stove and enjoy your delicious ramen.",
+                v_drain_intro: "The noodles are ready! Carefully drain some hot water and mix in the sauce.",
+                v_cold_intro: "Noodles are done! Immediately rinse them in cold water, drain, and mix with the sauce."
+            },
+            zh: {
+                title: "🍜 精确智能方便面多国语定时器",
+                langLabel: "🌐 选择语言:",
+                settingTitle: "⚙️ 烹饪配方设置",
+                ramenLabel: "🍜 选择方便面类型",
+                cardWater: "建议水量:",
+                cardTime: "总烹饪时间:",
+                stoveLabel: "🔥 加热炉具 (影响烧水时间)",
+                stoveGas: "燃气灶 (4分钟)",
+                stoveInduction: "电磁炉 (3分钟)",
+                toppingLabel: "🥬 额外配料 (出锅前1分钟提醒)",
+                topRice: "韩式年糕",
+                topGreen: "葱花",
+                topCheese: "芝士/干酪",
+                eggLabel: "🥚 鸡蛋熟度选项",
+                eggNone: "不加鸡蛋",
+                eggSoft: "半熟蛋 (倒计时1分30秒时放入)",
+                eggHard: "全熟蛋 (与面饼同时下锅)",
+                statusTitle: "📊 实时烹饪进度",
+                badgeStep: "步骤",
+                ready: "确认烹饪选项后，点击下方开始按钮以加热开水。",
+                startTextReady: "开始当前步骤",
+                startTextPause: "暂停",
+                nextText: "跳到下一个烹饪步骤",
+                resetText: "重新开始",
+                tls1: "烧水阶段",
+                tls2: "下料烹煮",
+                tls3: "装盘享用",
+                
+                v_start_boil: "开始烧水。水烧开后，请手动进入下一步骤。",
+                v_water_boiling: "水已经剧烈沸腾！请切换至下一步骤。",
+                v_add_noodles: "请放入面饼和调料包。点击开始按钮以启动面条烹煮定时器。",
+                v_add_hard_egg: "提示，全熟蛋也请在现在一起放入锅中。",
+                v_soft_egg_timing: "稍后我会提示您放入半熟蛋的最佳时机。",
+                v_alert_soft_egg: "放入半熟蛋的时间到了！现在请打入鸡蛋。",
+                v_alert_topping: "放入配料的时间到了！请把准备好的葱、芝士或年糕等配料放入锅中。",
+                v_finish_broth: "烹饪完成！请关火并将方便面盛入碗中，祝您用餐愉快。",
+                v_drain_intro: "面条煮好了！请小心沥干部分热水，加入酱料搅拌均匀。",
+                v_cold_intro: "面条煮好了！请立即用冷水冲洗、沥干，然后加入拌面酱搅拌。"
+            },
+            es: {
+                title: "🍜 Temporizador Inteligente de Ramen Multilingüe",
+                langLabel: "🌐 Idioma:",
+                settingTitle: "⚙️ Configuración de Receta",
+                ramenLabel: "🍜 Selecciona el Ramen",
+                cardWater: "Agua Recomendada:",
+                cardTime: "Tiempo Total:",
+                stoveLabel: "🔥 Tipo de Estufa (Afecta el punto de hervor)",
+                stoveGas: "Estufa de Gas (4m)",
+                stoveInduction: "Inducción (3m)",
+                toppingLabel: "🥬 Toppings (Alerta 1m antes del final)",
+                topRice: "Pastel de Arroz",
+                topGreen: "Cebollín",
+                topCheese: "Queso",
+                eggLabel: "🥚 Opción de Huevo",
+                eggNone: "Sin Huevo",
+                eggSoft: "Poco Cocido (Agregar 1m 30s antes)",
+                eggHard: "Duro (Agregar con los fideos)",
+                statusTitle: "📊 Progreso en Tiempo Real",
+                badgeStep: "PASO",
+                ready: "Configure las opciones y pulse Iniciar para calentar el agua.",
+                startTextReady: "Iniciar Paso Actual",
+                startTextPause: "Pausa",
+                nextText: "Saltar al Siguiente Paso",
+                resetText: "Restablecer Todo",
+                tls1: "Hervir Agua",
+                tls2: "Agregar Fideos",
+                tls3: "Servir / Final",
+                
+                v_start_boil: "Comenzando a hervir el agua. Proceda al siguiente paso cuando hierva.",
+                v_water_boiling: "¡El agua está hirviendo fuertemente! Pase al siguiente paso.",
+                v_add_noodles: "Agregue los fideos y los sobres de sopa. Presione iniciar para activar el temporizador de cocción.",
+                v_add_hard_egg: "Nota: por favor agregue el huevo duro ahora también.",
+                v_soft_egg_timing: "Le avisaré cuándo agregar el huevo poco cocido en breve.",
+                v_alert_soft_egg: "¡Momento del huevo poco cocido! Rompa el huevo en la olla ahora.",
+                v_alert_topping: "¡Momento de los toppings! Agregue el cebollín, el queso o los pasteles de arroz a la olla.",
+                v_finish_broth: "¡La cocción ha terminado! Apague la estufa y disfrute de su delicioso ramen.",
+                v_drain_intro: "¡Los fideos están listos! Escurra el agua caliente con cuidado y mezcle con la salsa.",
+                v_cold_intro: "¡Fideos listos! Enjuáguelos inmediatamente con agua fría, escúrralos y mezcle con la salsa."
+            },
+            de: {
+                title: "🍜 Intelligenter Kochtimer für Ramen (Mehrsprachig)",
+                langLabel: "🌐 Sprache:",
+                settingTitle: "⚙️ Rezept-Einstellungen",
+                ramenLabel: "🍜 Ramen-Typ wählen",
+                cardWater: "Wassermenge:",
+                cardTime: "Kochzeit:",
+                stoveLabel: "🔥 Herdart (Beeinflusst Kochzeit)",
+                stoveGas: "Gasherd (4 Min.)",
+                stoveInduction: "Induktion (3 Min.)",
+                toppingLabel: "🥬 Toppings (Meldung 1 Min. vor Schluss)",
+                topRice: "Reiskuchen (Tteok)",
+                topGreen: "Frühlingszwiebeln",
+                topCheese: "Käse",
+                eggLabel: "🥚 Ei-Option",
+                eggNone: "Kein Ei",
+                eggSoft: "Weichgekocht (1:30 Min. vor Ende hinzufügen)",
+                eggHard: "Hartgekocht (mit Nudeln hinzufügen)",
+                statusTitle: "📊 Echtzeit-Fortschritt",
+                badgeStep: "SCHRITT",
+                ready: "Optionen wählen und Start drücken, um das Wasser zu erhitzen.",
+                startTextReady: "Aktuellen Schritt starten",
+                startTextPause: "Pause",
+                nextText: "Direkt zum nächsten Schritt",
+                resetText: "Zurücksetzen",
+                tls1: "Wasser kochen",
+                tls2: "Nudeln kochen",
+                tls3: "Fertigstellen / Servieren",
+                
+                v_start_boil: "Wasser wird erhitzt. Bitte fahren Sie mit dem nächsten Schritt fort, wenn das Wasser kocht.",
+                v_water_boiling: "Das Wasser kocht kräftig! Bitte gehen Sie zum nächsten Schritt über.",
+                v_add_noodles: "Geben Sie die Nudeln und die Gewürze hinzu. Drücken Sie Start, um den Kochtimer zu starten.",
+                v_add_hard_egg: "Hinweis: Bitte geben Sie das hartgekochte Ei jetzt ebenfalls hinzu.",
+                v_soft_egg_timing: "Ich werde Ihnen gleich sagen, wann Sie das weichgekochte Ei hinzufügen müssen.",
+                v_alert_soft_egg: "Zeit für das weichgekochte Ei! Geben Sie das Ei jetzt in den Topf.",
+                v_alert_topping: "Zeit für die Toppings! Bitte geben Sie Frühlingszwiebeln, Käse oder Reiskuchen in den Topf.",
+                v_finish_broth: "Das Kochen ist beendet! Schalten Sie den Herd aus und genießen Sie Ihre köstlichen Ramen.",
+                v_drain_intro: "Die Nudeln sind fertig! Gießen Sie vorsichtig etwas heißes Wasser ab und mischen Sie die Sauce unter.",
+                v_cold_intro: "Die Nudeln sind fertig! Sofort mit kaltem Wasser abschrecken, abgießen und mit der Sauce mischen."
+            },
+            ja: {
+                title: "🍜 超精密スマートラーメンマルチタイマー",
+                langLabel: "🌐 言語選択:",
+                settingTitle: "⚙️ 調理設定",
+                ramenLabel: "🍜 ラーメンの種類",
+                cardWater: "推奨水分量:",
+                cardTime: "調理時間:",
+                stoveLabel: "🔥 熱器具選択 (沸騰時間の差を考慮)",
+                stoveGas: "ガスコンロ (4分)",
+                stoveInduction: "IHクッキングヒーター (3分)",
+                toppingLabel: "🥬 追加トッピング (調理終了1分前に通知)",
+                topRice: "トック（韓国餅）",
+                topGreen: "刻みネギ",
+                topCheese: "チーズ",
+                eggLabel: "🥚 卵オプション",
+                eggNone: "卵なし",
+                eggSoft: "半熟卵 (残り1分30秒で投入)",
+                eggHard: "固茹で卵 (麺と同時に投入)",
+                statusTitle: "📊 リアルタイム進捗",
+                badgeStep: "ステップ",
+                ready: "調理オプションを確認して、下の開始ボタンを押してください。",
+                startTextReady: "現在のステップを開始",
+                startTextPause: "一時停止",
+                nextText: "次の調理ステップにスキップ",
+                resetText: "最初からリセット",
+                tls1: "お湯を沸かす",
+                tls2: "具材を投入",
+                tls3: "仕上げ / 実食",
+                
+                v_start_boil: "お湯を沸かし始めます。沸騰したら次のステップに進んでください。",
+                v_water_boiling: "お湯が激しく沸騰しています！次のステップへ進んでください。",
+                v_add_noodles: "麺とスープを入れてください。開始ボタンを押すとタイマーが始動します。",
+                v_add_hard_egg: "なお、固茹で卵も今一緒に入れてください。",
+                v_soft_egg_timing: "のちほど、半熟卵を入れるタイミングをお知らせします。",
+                v_alert_soft_egg: "半熟卵を入れるタイミングです！今すぐ卵を割り入れてください。",
+                v_alert_topping: "トッピングのタイミングです！ネギやチーズ、トックを鍋に入れてください。",
+                v_finish_broth: "調理が完了しました！火を止めて美味しいラーメンをお皿に盛り付け、お召し上がりください。",
+                v_drain_intro: "麺が茹で上がりました！お湯を少しだけ残して捨て、ソースとよく混ぜ合わせてください。",
+                v_cold_intro: "麺が茹で上がりました！すぐに冷水で冷やして水気を切り、ビビン調味料とよく混ぜてください。"
+            },
+            vi: {
+                title: "🍜 Hẹn Giờ Nấu Mì Ramen Thông Minh Đa Ngôn Ngữ",
+                langLabel: "🌐 Ngôn ngữ:",
+                settingTitle: "⚙️ Cài đặt công thức nấu ăn",
+                ramenLabel: "🍜 Chọn loại mì ăn liền",
+                cardWater: "Lượng nước khuyến nghị:",
+                cardTime: "Tổng thời gian nấu:",
+                stoveLabel: "🔥 Chọn bếp nấu (Ảnh hưởng thời gian sôi)",
+                stoveGas: "Bếp ga (4 phút)",
+                stoveInduction: "Bếp từ (3 phút)",
+                toppingLabel: "🥬 Topping thêm vào (Báo trước 1 phút)",
+                topRice: "Bánh gạo",
+                topGreen: "Hành lá",
+                topCheese: "Phô mai",
+                eggLabel: "🥚 Tùy chọn trứng",
+                eggNone: "Không dùng trứng",
+                eggSoft: "Lòng đào (Thả vào trước 1p 30s)",
+                eggHard: "Trứng chín (Thả vào cùng mì)",
+                statusTitle: "📊 Tiến độ nấu theo thời gian thực",
+                badgeStep: "BƯỚC",
+                ready: "Hãy kiểm tra các tùy chọn và nhấn Bắt đầu để đun sôi nước.",
+                startTextReady: "Bắt đầu bước này",
+                startTextPause: "Tạm dừng",
+                nextText: "Chuyển nhanh sang bước tiếp theo",
+                resetText: "Thiết lập lại",
+                tls1: "Đun sôi nước",
+                tls2: "Thả nguyên liệu",
+                tls3: "Hoàn thành / Thưởng thức",
+                
+                v_start_boil: "Bắt đầu đun sôi nước. Vui lòng chuyển sang bước tiếp theo khi nước sôi.",
+                v_water_boiling: "Nước đã sôi sùng sục! Vui lòng chuyển sang bước tiếp theo.",
+                v_add_noodles: "Thả mì và các gói gia vị vào. Nhấn nút bắt đầu để khởi động bộ hẹn giờ nấu mì.",
+                v_add_hard_egg: "Lưu ý, vui lòng cho cả trứng chín kỹ vào nồi lúc này.",
+                v_soft_egg_timing: "Tôi sẽ hướng dẫn bạn thời điểm thích hợp để cho trứng lòng đào sau một lát nữa.",
+                v_alert_soft_egg: "Đến lúc cho trứng lòng đào rồi! Hãy đập trứng vào nồi ngay bây giờ.",
+                v_alert_topping: "Thời điểm thêm topping! Hãy cho hành lá, phô mai hoặc bánh gạo đã chuẩn bị vào nồi.",
+                v_finish_broth: "Đã nấu xong! Hãy tắt bếp, múc mì ra bát và thưởng thức bữa ăn ngon miệng.",
+                v_drain_intro: "Sợi mì đã chín! Hãy cẩn thận chắt bớt nước nóng ra ngoài và trộn đều gói sốt.",
+                v_cold_intro: "Nấu mì xong! Hãy rửa sạch mì bằng nước lạnh ngay lập tức, để ráo nước và trộn đều với gói sốt trộn."
+            }
+        };
+
+        // 전역 상태 변수들
+        let currentLang = 'ko';
+        let currentStep = 1;      // 1: 물끓이기, 2: 면삶기/조리, 3: 최종 조리/서빙완료
+        let timeRemaining = 0;
+        let timerId = null;
+        let isRunning = false;
+        
+        let selectedRamenKey = 'shin';
+        let ramenConfig = ramenDatabase[selectedRamenKey];
+
+        // 초기 화면 설정
+        window.onload = function() {
+            changeLanguage();
+            onRamenChange();
+        };
+
+        // 라면 선택 변경 처리
+        function onRamenChange() {
+            selectedRamenKey = document.getElementById('ramenSelect').value;
+            ramenConfig = ramenDatabase[selectedRamenKey];
+            
+            // 라면 카드 정보 실시간 업데이트
+            document.getElementById('infoWater').innerText = `${ramenConfig.water} ml`;
+            
+            const minutes = Math.floor(ramenConfig.cookTime / 60);
+            const seconds = ramenConfig.cookTime % 60;
+            const timeStr = currentLang === 'ko' ? `${minutes}분 ${seconds}초` : `${minutes}m ${seconds}s`;
+            document.getElementById('infoTime').innerText = timeStr;
+            
+            // 다국어 팁 매핑
+            const tipKey = `tip_${currentLang}`;
+            document.getElementById('infoTip').innerText = ramenConfig[tipKey] || ramenConfig.tip_ko;
+            
+            // 상태 초기화
+            resetAll();
+        }
+
+        // 언어 교체 기능
+        function changeLanguage() {
+            currentLang = document.getElementById('langSelect').value;
+            const dict = i18n[currentLang];
+
+            // UI 텍스트 변환
+            document.getElementById('ui-title').innerText = dict.title;
+            document.getElementById('ui-lang-label').innerText = dict.langLabel;
+            document.getElementById('ui-setting-title').innerText = dict.settingTitle;
+            document.getElementById('ui-ramen-label').innerText = dict.ramenLabel;
+            document.getElementById('ui-card-water-label').innerText = dict.cardWater;
+            document.getElementById('ui-card-time-label').innerText = dict.cardTime;
+            document.getElementById('ui-stove-label').innerText = dict.stoveLabel;
+            document.getElementById('ui-stove-gas').innerText = dict.stoveGas;
+            document.getElementById('ui-stove-induction').innerText = dict.stoveInduction;
+            document.getElementById('ui-topping-label').innerText = dict.toppingLabel;
+            document.getElementById('ui-top-rice').innerText = dict.topRice;
+            document.getElementById('ui-top-green').innerText = dict.topGreen;
+            document.getElementById('ui-top-cheese').innerText = dict.topCheese;
+            document.getElementById('ui-egg-label').innerText = dict.eggLabel;
+            document.getElementById('ui-status-title').innerText = dict.statusTitle;
+            document.getElementById('ui-next-text').innerText = dict.nextText;
+            document.getElementById('ui-reset-text').innerText = dict.resetText;
+
+            // 라인맵 타임라인 타이틀 수정
+            document.getElementById('ui-tl-s1').innerText = dict.tls1;
+            document.getElementById('ui-tl-s2').innerText = dict.tls2;
+            document.getElementById('ui-tl-s3').innerText = dict.tls3;
+
+            // 계란 드롭다운 셀렉트 리스트 동적 번역
+            const eggDropdown = document.getElementById('eggType');
+            eggDropdown.options[0].text = dict.eggNone;
+            eggDropdown.options[1].text = dict.eggSoft;
+            eggDropdown.options[2].text = dict.eggHard;
+
+            // 라면 목록 옵션들 번역 리프레시
+            const rSelect = document.getElementById('ramenSelect');
+            for (let option of rSelect.options) {
+                const key = option.value;
+                if (ramenDatabase[key]) {
+                    const localNameKey = `name_${currentLang}`;
+                    option.text = ramenDatabase[key][localNameKey] || ramenDatabase[key].name_ko;
+                }
+            }
+
+            // 라면 팁 리프레시
+            const tipKey = `tip_${currentLang}`;
+            document.getElementById('infoTip').innerText = ramenConfig[tipKey] || ramenConfig.tip_ko;
+
+            // 현재 타이머 상태에 맞춰 텍스트 재구성
+            updateProgressUI();
+        }
+
+        // 이모티콘 및 특수 문자 필터링 후 텍스트-음성 변환(TTS) 실행
+        function speak(text) {
+            if (!text) return;
+            window.speechSynthesis.cancel(); // 이전 소리 클리어
+            
+            // 이모티콘 문자 및 특수문자 정규식 필터링
+            const cleanText = text.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F1E0}-\u{1F1FF}]/gu, '')
+                                  .replace(/➔/g, '그리고')
+                                  .replace(/➔/g, 'and')
+                                  .replace(/\//g, ' ');
+
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            
+            // 브라우저 다국어 코드 연결
+            const langCodeMap = { ko: 'ko-KR', en: 'en-US', zh: 'zh-CN', es: 'es-ES', de: 'de-DE', ja: 'ja-JP', vi: 'vi-VN' };
+            utterance.lang = langCodeMap[currentLang];
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // 전체 초기화 함수
+        function resetAll() {
+            clearInterval(timerId);
+            timerId = null;
+            isRunning = false;
+            currentStep = 1;
+            
+            // 열기구 기반 끓는물 세팅
+            initStepTime();
+            updateProgressUI();
+        }
+
+        // 각 단계별 초기 시간 지정
+        function initStepTime() {
+            if (currentStep === 1) {
+                // 물 끓이기 단계: 가스 4분(240초) / 인덕션 3분(180초)
+                const isGas = document.querySelector('input[name="stoveType"]:checked').value === 'gas';
+                timeRemaining = isGas ? 240 : 180;
+            } else if (currentStep === 2) {
+                // 면 끓이기 및 조리 단계 (선택된 라면 제조사 스펙 시간 기준)
+                timeRemaining = ramenConfig.cookTime;
+            } else {
+                timeRemaining = 0;
+            }
+        }
+
+        // 단계 및 타이머 상황에 맞춰 화면 리액티브 업데이트
+        function updateProgressUI() {
+            const dict = i18n[currentLang];
+            
+            // 현재 단계 뱃지 및 타이머 출력
+            document.getElementById('currentStepBadge').innerText = `${dict.badgeStep} ${currentStep} / 3`;
+            document.getElementById('timerDisplay').innerText = formatTime(timeRemaining);
+
+            // 시작 버튼 상태 텍스트
+            const startBtnText = document.getElementById('ui-start-text');
+            const startBtnIcon = document.getElementById('startBtnIcon');
+            if (isRunning) {
+                startBtnText.innerText = dict.startTextPause;
+                startBtnIcon.innerText = "⏸️";
+            } else {
+                startBtnText.innerText = dict.startTextReady;
+                startBtnIcon.innerText = "▶️";
+            }
+
+            // 타임라인 하이라이팅 제어
+            document.getElementById('timeline-step1').className = currentStep === 1 ? 'flex-1 text-center font-bold text-sm text-red-500 scale-105 transition-all' : 'flex-1 text-center font-semibold text-xs text-slate-400';
+            document.getElementById('timeline-step2').className = currentStep === 2 ? 'flex-1 text-center font-bold text-sm text-red-500 scale-105 transition-all' : 'flex-1 text-center font-semibold text-xs text-slate-400';
+            document.getElementById('timeline-step3').className = currentStep === 3 ? 'flex-1 text-center font-bold text-sm text-red-500 scale-105 transition-all' : 'flex-1 text-center font-semibold text-xs text-slate-400';
+
+            // 단계별 안내 메시지 분기처리
+            const msgBox = document.getElementById('statusMessageBox');
+            if (currentStep === 1) {
+                if (!isRunning) {
+                    msgBox.innerText = dict.ready;
+                } else {
+                    msgBox.innerText = dict.v_start_boil;
+                }
+            } else if (currentStep === 2) {
+                if (!isRunning) {
+                    let text = dict.v_add_noodles;
+                    const eggVal = document.getElementById('eggType').value;
+                    if (eggVal === 'hard') text += " " + dict.v_add_hard_egg;
+                    if (eggVal === 'soft') text += " " + dict.v_soft_egg_timing;
+                    msgBox.innerText = text;
+                } else {
+                    msgBox.innerText = `${ramenConfig[`name_${currentLang}`] || ramenConfig.name_ko} - 조리가 진행 중입니다.`;
+                }
+            } else if (currentStep === 3) {
+                if (ramenConfig.type === 'drain') {
+                    msgBox.innerText = dict.v_drain_intro;
+                } else if (ramenConfig.type === 'cold') {
+                    msgBox.innerText = dict.v_cold_intro;
+                } else {
+                    msgBox.innerText = dict.v_finish_broth;
+                }
+            }
+        }
+
+        // 초단위 데이터를 MM:SS 문자열로 변환
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // 타이머 시작 및 일시정지 스위치
+        function toggleTimer() {
+            if (currentStep === 3) {
+                // 이미 끝났다면 시작 버튼 작동하지 않음
+                return;
+            }
+
+            if (isRunning) {
+                // 일시정지 실행
+                clearInterval(timerId);
+                timerId = null;
+                isRunning = false;
+                updateProgressUI();
+            } else {
+                // 작동 시작
+                isRunning = true;
+                updateProgressUI();
+                
+                // 처음 시작할 때 안내 멘트 발송
+                if (currentStep === 1) {
+                    speak(i18n[currentLang].v_start_boil);
+                } else if (currentStep === 2) {
+                    let announceText = i18n[currentLang].v_add_noodles;
+                    const eggVal = document.getElementById('eggType').value;
+                    if (eggVal === 'hard') announceText += " " + i18n[currentLang].v_add_hard_egg;
+                    speak(announceText);
+                }
+
+                timerId = setInterval(() => {
+                    if (timeRemaining > 0) {
+                        timeRemaining--;
+                        document.getElementById('timerDisplay').innerText = formatTime(timeRemaining);
+                        
+                        // 2단계 (면 조리 도중) 특수 행동별 알람 트리거
+                        if (currentStep === 2) {
+                            handleMidStepAlerts();
+                        }
+                    } else {
+                        // 시간 종료 시 다음 단계 대기로 이동
+                        goToNextStepWaiting();
+                    }
+                }, 1000);
+            }
+        }
+
+        // 조리 도중 중간 토핑/반숙 계란 타이밍 알람 처리
+        function handleMidStepAlerts() {
+            const dict = i18n[currentLang];
+            const eggVal = document.getElementById('eggType').value;
+            const hasToppings = document.getElementById('top-rice').checked || document.getElementById('top-green').checked || document.getElementById('top-cheese').checked;
+
+            // 1. 반숙 계란 타이밍: 종료 1분 30초 전 (90초 남음)
+            if (eggVal === 'soft' && timeRemaining === 90) {
+                document.getElementById('statusMessageBox').innerText = dict.v_alert_soft_egg;
+                speak(dict.v_alert_soft_egg);
+            }
+
+            // 2. 토핑 타이밍: 종료 1분 전 (60초 남음)
+            if (hasToppings && timeRemaining === 60) {
+                document.getElementById('statusMessageBox').innerText = dict.v_alert_topping;
+                speak(dict.v_alert_topping);
+            }
+        }
+
+        // 자연스런 다음단계 대기 기능 (시작 버튼을 눌러야 진행됨)
+        function goToNextStepWaiting() {
+            clearInterval(timerId);
+            timerId = null;
+            isRunning = false;
+
+            if (currentStep === 1) {
+                currentStep = 2;
+                initStepTime();
+                updateProgressUI();
+                speak(i18n[currentLang].v_water_boiling);
+            } else if (currentStep === 2) {
+                currentStep = 3;
+                initStepTime();
+                updateProgressUI();
+                
+                // 종료 멘트 발송 (종류별로 다르게 발송)
+                if (ramenConfig.type === 'drain') {
+                    speak(i18n[currentLang].v_drain_intro);
+                } else if (ramenConfig.type === 'cold') {
+                    speak(i18n[currentLang].v_cold_intro);
+                } else {
+                    speak(i18n[currentLang].v_finish_broth);
+                }
+            }
+        }
+
+        // 사용자가 수동으로 다음단계로 넘길 때
+        function manuallyNextStep() {
+            goToNextStepWaiting();
+        }
+    </script>
+</body>
+</html>
